@@ -60,7 +60,7 @@
     <input type="number" id="difesa">
   </label>
 
-  <label>Livello dell'attaccante:
+  <label>Livello dell'attaccante (attuale):
     <input type="number" id="livello">
   </label>
 
@@ -116,15 +116,21 @@
 
       const baseMin = ((danno / modMax) - 2) * 50 * def;
       const baseMax = ((danno / modMin) - 2) * 50 * def;
-      const den = ((2 * lvl / 5 + 2) * power);
+      const denAttuale = ((2 * lvl / 5 + 2) * power);
 
-      const attMin = baseMin / den;
-      const attMax = baseMax / den;
+      const attMin = baseMin / denAttuale;
+      const attMax = baseMax / denAttuale;
 
       const min = Math.floor(attMin);
       const max = Math.ceil(attMax);
 
-      document.getElementById("risultato").innerText = `Attacco stimato: tra ${min} e ${max}`;
+      // Calcolo dell'attacco al livello 8 (proporzione lineare semplificata)
+      const attMin8 = Math.floor(attMin * (8 / lvl));
+      const attMax8 = Math.ceil(attMax * (8 / lvl));
+
+      document.getElementById("risultato").innerHTML =
+        `Attacco stimato attuale: tra <strong>${min}</strong> e <strong>${max}</strong><br>` +
+        `Attacco stimato al livello 8: tra <strong>${attMin8}</strong> e <strong>${attMax8}</strong>`;
     }
   </script>
 </body>
