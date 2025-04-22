@@ -46,6 +46,14 @@
       text-align: center;
       font-size: 1.2rem;
       color: #222;
+      padding: 1rem;
+      background-color: #f0f0f0;
+      border-radius: 5px;
+    }
+    .note {
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 0.5rem;
     }
   </style>
 </head>
@@ -53,19 +61,19 @@
   <h1>Calcolatore Attacco Pokémon</h1>
 
   <label>Danno subito:
-    <input type="number" id="danno">
+    <input type="number" id="danno" min="1">
   </label>
 
-  <label>Difesa del difensore:
-    <input type="number" id="difesa">
+  <label>Difesa del tuo Pokémon:
+    <input type="number" id="difesa" min="1">
   </label>
 
   <label>Livello dell'attaccante:
-    <input type="number" id="livello" min="1" max="100">
+    <input type="number" id="livello" min="1" max="100" value="8">
   </label>
 
   <label>Potenza della mossa:
-    <input type="number" id="potenza">
+    <input type="number" id="potenza" min="1">
   </label>
 
   <label>STAB:
@@ -94,9 +102,9 @@
 
   <label>Range casuale:
     <select id="random">
-      <option value="0.85-1.00">Normale (85%-100%)</option>
-      <option value="0.925-1.00">Ridotto (92.5%-100%)</option>
-      <option value="1.00-1.00">Fisso (100%)</option>
+      <option value="0.85">Normale (85%-100%)</option>
+      <option value="0.925">Ridotto (92.5%-100%)</option>
+      <option value="1.00">Fisso (100%)</option>
     </select>
   </label>
 
@@ -104,81 +112,67 @@
   <button onclick="calcolaTuttiLivelli()">Calcola per Livelli 3/5/8</button>
 
   <div id="risultato">Inserisci i dati e premi Calcola.</div>
+  <div class="note">Nota: Per risultati più precisi, usa il danno minimo e massimo osservato.</div>
 
   <script>
     function calcolaAttacco() {
-      const danno = parseFloat(document.getElementById("danno").value);
-      const def = parseFloat(document.getElementById("difesa").value);
-      const lvl = parseFloat(document.getElementById("livello").value);
-      const power = parseFloat(document.getElementById("potenza").value);
+      // Recupera i valori dai campi di input
+      const danno = parseInt(document.getElementById("danno").value);
+      const def = parseInt(document.getElementById("difesa").value);
+      const lvl = parseInt(document.getElementById("livello").value);
+      const power = parseInt(document.getElementById("potenza").value);
       const stab = parseFloat(document.getElementById("stab").value);
       const eff = parseFloat(document.getElementById("efficacia").value);
       const crit = parseFloat(document.getElementById("critico").value);
-      const randomRange = document.getElementById("random").value.split("-");
-      const randomMin = parseFloat(randomRange[0]);
-      const randomMax = parseFloat(randomRange[1]);
+      const randomMin = parseFloat(document.getElementById("random").value);
 
       if (isNaN(danno) || isNaN(def) || isNaN(lvl) || isNaN(power)) {
         document.getElementById("risultato").innerText = "Per favore, compila tutti i campi correttamente.";
         return;
       }
 
-      // Modificatore completo con range di variabilità
-      const modMin = stab * eff * crit * randomMin;
-      const modMax = stab * eff * crit * randomMax;
-
-      // Calcolo del divisore con arrotondamenti corretti
-      const base = Math.floor(Math.floor(2 * lvl) / 5) + 2;
-      const intermediate = Math.floor(base * power);
-      const divisor = Math.floor(intermediate / def) / 50;
-
-      // Formula inversa migliorata con arrotondamenti
-      const atkMin = Math.floor((danno / modMax - 2) / divisor);
-      const atkMax = Math.ceil((danno / modMin - 2) / divisor);
-
-      // Aggiungiamo un margine di sicurezza per compensare gli arrotondamenti
-      const margin = Math.max(1, Math.floor((atkMax - atkMin) * 0.3));
-      const adjustedMin = Math.max(1, atkMin - margin);
-      const adjustedMax = atkMax + margin;
-
-      document.getElementById("risultato").innerHTML =
-        `Attacco stimato del Pokémon: tra <strong>${adjustedMin}</strong> e <strong>${adjustedMax}</strong>`;
-    }
-
-    function calcolaPerLivello(livello) {
-      const danno = parseFloat(document.getElementById("danno").value);
-      const def = parseFloat(document.getElementById("difesa").value);
-      const power = parseFloat(document.getElementById("potenza").value);
-      const stab = parseFloat(document.getElementById("stab").value);
-      const eff = parseFloat(document.getElementById("efficacia").value);
-      const crit = parseFloat(document.getElementById("critico").value);
-      const randomRange = document.getElementById("random").value.split("-");
-      const randomMin = parseFloat(randomRange[0]);
-      const randomMax = parseFloat(randomRange[1]);
-
-      if (isNaN(danno) || isNaN(def) || isNaN(power)) {
-        return { min: 0, max: 0 };
+      // Calcola l'attacco usando la formula precisa
+      const attackRanges = [];
+      
+      // Prova diversi valori di moltiplicatore casuale (da 0.85 a 1.00 in passi di 0.01)
+      for (let r = randomMin; r <= 1.00; r += 0.01) {
+        r = parseFloat(r.toFixed(2));
+        const modifier = stab * eff * crit * r;
+        
+        // Formula originale del danno Pokémon
+        const base = Math.floor((2 * lvl) / 5) + 2;
+        const baseDamage = Math.floor((base * power * 25) / def);
+        const fullDamage = Math.floor(baseDamage / 50) + 2;
+        
+        // Calcola l'attacco necessario per ottenere il danno osservato
+        const attack = Math.floor((danno / modifier - 2) * def * 50 / (base * power));
+        
+        if (Math.floor(fullDamage * modifier) === danno) {
+          attackRanges.push(attack);
+        }
       }
 
-      // Modificatore completo con range di variabilità
-      const modMin = stab * eff * crit * randomMin;
-      const modMax = stab * eff * crit * randomMax;
+      // Se non troviamo corrispondenze esatte, allarghiamo la ricerca
+      if (attackRanges.length === 0) {
+        for (let r = randomMin; r <= 1.00; r += 0.01) {
+          r = parseFloat(r.toFixed(2));
+          const attack = Math.floor(((danno / (stab * eff * crit * r) - 2) * def * 50 / (Math.floor((2 * lvl) / 5 + 2) * power));
+          attackRanges.push(attack);
+        }
+      }
 
-      // Calcolo del divisore con arrotondamenti corretti
-      const base = Math.floor(Math.floor(2 * livello) / 5) + 2;
-      const intermediate = Math.floor(base * power);
-      const divisor = Math.floor(intermediate / def) / 50;
+      // Calcola min e max con un margine più ampio
+      const minAttack = Math.min(...attackRanges);
+      const maxAttack = Math.max(...attackRanges);
+      
+      // Aggiungi un margine del 15% per sicurezza
+      const margin = Math.max(2, Math.floor((maxAttack - minAttack) * 0.15));
+      const adjustedMin = Math.max(1, minAttack - margin);
+      const adjustedMax = maxAttack + margin;
 
-      // Formula inversa migliorata con arrotondamenti
-      const atkMin = Math.floor((danno / modMax - 2) / divisor);
-      const atkMax = Math.ceil((danno / modMin - 2) / divisor);
-
-      // Aggiungiamo un margine di sicurezza
-      const margin = Math.max(1, Math.floor((atkMax - atkMin) * 0.3));
-      const adjustedMin = Math.max(1, atkMin - margin);
-      const adjustedMax = atkMax + margin;
-
-      return { min: adjustedMin, max: adjustedMax };
+      document.getElementById("risultato").innerHTML =
+        `Attacco stimato del Pokémon: tra <strong>${adjustedMin}</strong> e <strong>${adjustedMax}</strong><br>
+         Valori possibili: ${[...new Set(attackRanges)].sort((a,b) => a-b).join(', ')}`;
     }
 
     function calcolaTuttiLivelli() {
@@ -186,12 +180,14 @@
       const risultati = [];
       
       livelli.forEach(lvl => {
-        const risultato = calcolaPerLivello(lvl);
-        risultati.push(`Liv ${lvl}: ${risultato.min}-${risultato.max}`);
+        document.getElementById("livello").value = lvl;
+        calcolaAttacco();
+        const risultato = document.getElementById("risultato").innerHTML;
+        risultati.push(`<strong>Liv ${lvl}:</strong> ${risultato.split('tra ')[1]}`);
       });
       
       document.getElementById("risultato").innerHTML = 
-        `Attacco stimato:<br>${risultati.join('<br>')}`;
+        `Stima attacco per diversi livelli:<br><br>${risultati.join('<br><br>')}`;
     }
   </script>
 </body>
