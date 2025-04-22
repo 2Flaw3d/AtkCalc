@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -120,78 +121,83 @@
 
   <script>
     function calcolaAttacco() {
-      // Recupera i valori dai campi di input
-      const danno = parseInt(document.getElementById("danno").value);
-      const def = parseInt(document.getElementById("difesa").value);
-      const lvl = parseInt(document.getElementById("livello").value);
-      const power = parseInt(document.getElementById("potenza").value);
-      const stab = parseFloat(document.getElementById("stab").value);
-      const eff = parseFloat(document.getElementById("efficacia").value);
-      const crit = parseFloat(document.getElementById("critico").value);
-      const randomMin = parseFloat(document.getElementById("random").value);
+      try {
+        // Recupera i valori dai campi di input
+        const danno = parseInt(document.getElementById("danno").value);
+        const def = parseInt(document.getElementById("difesa").value);
+        const lvl = parseInt(document.getElementById("livello").value);
+        const power = parseInt(document.getElementById("potenza").value);
+        const stab = parseFloat(document.getElementById("stab").value);
+        const eff = parseFloat(document.getElementById("efficacia").value);
+        const crit = parseFloat(document.getElementById("critico").value);
+        const randomMin = parseFloat(document.getElementById("random").value);
 
-      if (isNaN(danno) || isNaN(def) || isNaN(lvl) || isNaN(power)) {
-        document.getElementById("risultato").innerText = "Per favore, compila tutti i campi correttamente.";
-        return;
-      }
-
-      // Formula specifica per Gen 5
-      const attackValues = new Set();
-      
-      // Prova tutti i possibili valori di moltiplicatore casuale
-      for (let r = randomMin; r <= 1.00; r += 0.01) {
-        r = parseFloat(r.toFixed(2));
-        const modifier = stab * eff * crit * r;
-        
-        // Calcola l'attacco necessario per ottenere il danno osservato
-        // Formula Gen 5: Danno = (((2*L/5 + 2)*A*P/D)/50 + 2)*modifier
-        const numerator = (danno / modifier - 2) * 50;
-        const denominator = (Math.floor(2 * lvl / 5) + 2) * power / def;
-        const attack = numerator / denominator;
-        
-        // Considera solo valori interi realistici (1-255)
-        const roundedAttack = Math.round(attack);
-        if (roundedAttack >= 1 && roundedAttack <= 255) {
-          attackValues.add(roundedAttack);
+        if (isNaN(danno) || isNaN(def) || isNaN(lvl) || isNaN(power)) {
+          document.getElementById("risultato").innerText = "Per favore, compila tutti i campi correttamente.";
+          return;
         }
-      }
 
-      // Se non troviamo valori, usiamo un approccio più approssimativo
-      if (attackValues.size === 0) {
-        const minAttack = Math.floor(((danno / (stab * eff * crit * 1.00) - 2) * def * 50 / ((Math.floor(2 * lvl / 5) + 2) * power));
-        const maxAttack = Math.ceil(((danno / (stab * eff * crit * randomMin) - 2) * def * 50 / ((Math.floor(2 * lvl / 5) + 2) * power));
+        // Formula specifica per Gen 5
+        const attackValues = new Set();
         
-        // Aggiungi un margine più ampio per sicurezza
-        const margin = Math.max(3, Math.floor((maxAttack - minAttack) * 0.25));
-        const adjustedMin = Math.max(1, minAttack - margin);
-        const adjustedMax = maxAttack + margin;
-        
-        document.getElementById("risultato").innerHTML =
-          `Attacco stimato: tra <strong>${adjustedMin}</strong> e <strong>${adjustedMax}</strong><br>
-           <span class="highlight">Nota: Potrebbe essere necessario verificare più valori</span>`;
-        return;
-      }
+        // Prova tutti i possibili valori di moltiplicatore casuale
+        for (let i = 0; i <= Math.round((1.00 - randomMin) * 100); i++) {
+          const r = parseFloat((randomMin + i * 0.01).toFixed(2));
+          const modifier = stab * eff * crit * r;
+          
+          // Calcola l'attacco necessario per ottenere il danno osservato
+          // Formula Gen 5: Danno = (((2*L/5 + 2)*A*P/D)/50 + 2)*modifier
+          const numerator = (danno / modifier - 2) * 50;
+          const denominator = (Math.floor(2 * lvl / 5) + 2) * power / def;
+          const attack = numerator / denominator;
+          
+          // Considera solo valori interi realistici (1-255)
+          const roundedAttack = Math.round(attack);
+          if (roundedAttack >= 1 && roundedAttack <= 255) {
+            attackValues.add(roundedAttack);
+          }
+        }
 
-      // Converti il Set in un array ordinato
-      const sortedAttacks = Array.from(attackValues).sort((a, b) => a - b);
-      const minAttack = sortedAttacks[0];
-      const maxAttack = sortedAttacks[sortedAttacks.length - 1];
-      
-      // Espandi leggermente il range per sicurezza
-      const expandedMin = Math.max(1, minAttack - 2);
-      const expandedMax = maxAttack + 2;
-      
-      // Mostra i risultati
-      let resultHTML = `Attacco stimato: tra <strong>${expandedMin}</strong> e <strong>${expandedMax}</strong>`;
-      
-      // Se ci sono pochi valori possibili, mostrali tutti
-      if (sortedAttacks.length <= 10) {
-        resultHTML += `<br>Valori possibili: ${sortedAttacks.join(', ')}`;
-      } else {
-        resultHTML += `<br>${sortedAttacks.length} valori possibili`;
+        // Se non troviamo valori, usiamo un approccio più approssimativo
+        if (attackValues.size === 0) {
+          const minAttack = Math.floor(((danno / (stab * eff * crit * 1.00) - 2) * def * 50) / ((Math.floor(2 * lvl / 5) + 2) * power));
+          const maxAttack = Math.ceil(((danno / (stab * eff * crit * randomMin) - 2) * def * 50) / ((Math.floor(2 * lvl / 5) + 2) * power));
+          
+          // Aggiungi un margine più ampio per sicurezza
+          const margin = Math.max(3, Math.floor((maxAttack - minAttack) * 0.25));
+          const adjustedMin = Math.max(1, minAttack - margin);
+          const adjustedMax = maxAttack + margin;
+          
+          document.getElementById("risultato").innerHTML =
+            `Attacco stimato: tra <strong>${adjustedMin}</strong> e <strong>${adjustedMax}</strong><br>
+             <span class="highlight">Nota: Potrebbe essere necessario verificare più valori</span>`;
+          return;
+        }
+
+        // Converti il Set in un array ordinato
+        const sortedAttacks = Array.from(attackValues).sort((a, b) => a - b);
+        const minAttack = sortedAttacks[0];
+        const maxAttack = sortedAttacks[sortedAttacks.length - 1];
+        
+        // Espandi leggermente il range per sicurezza
+        const expandedMin = Math.max(1, minAttack - 2);
+        const expandedMax = maxAttack + 2;
+        
+        // Mostra i risultati
+        let resultHTML = `Attacco stimato: tra <strong>${expandedMin}</strong> e <strong>${expandedMax}</strong>`;
+        
+        // Se ci sono pochi valori possibili, mostrali tutti
+        if (sortedAttacks.length <= 10) {
+          resultHTML += `<br>Valori possibili: ${sortedAttacks.join(', ')}`;
+        } else {
+          resultHTML += `<br>${sortedAttacks.length} valori possibili`;
+        }
+        
+        document.getElementById("risultato").innerHTML = resultHTML;
+      } catch (err) {
+        console.error("Errore nella funzione calcolaAttacco:", err);
+        document.getElementById("risultato").innerText = "Si è verificato un errore nel calcolo.";
       }
-      
-      document.getElementById("risultato").innerHTML = resultHTML;
     }
 
     function calcolaTuttiLivelli() {
