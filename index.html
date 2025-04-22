@@ -20,7 +20,7 @@
       display: block;
       margin-top: 1rem;
     }
-    input {
+    input, select {
       width: 100%;
       padding: 0.5rem;
       margin-top: 0.25rem;
@@ -68,16 +68,28 @@
     <input type="number" id="potenza">
   </label>
 
-  <label>STAB (1 o 1.5):
-    <input type="number" step="0.1" id="stab" value="1.0">
+  <label>STAB:
+    <select id="stab">
+      <option value="1.0">No</option>
+      <option value="1.5">Sì</option>
+    </select>
   </label>
 
-  <label>Efficacia (0.5, 1, 2...):
-    <input type="number" step="0.5" id="efficacia" value="1.0">
+  <label>Efficacia:
+    <select id="efficacia">
+      <option value="0.25">¼×</option>
+      <option value="0.5">½×</option>
+      <option value="1.0" selected>1×</option>
+      <option value="2.0">2×</option>
+      <option value="4.0">4×</option>
+    </select>
   </label>
 
-  <label>Critico (1, 1.5 o 2):
-    <input type="number" step="0.5" id="critico" value="1.0">
+  <label>Colpo critico:
+    <select id="critico">
+      <option value="1.0">No</option>
+      <option value="1.5">Sì</option>
+    </select>
   </label>
 
   <button onclick="calcolaAttacco()">Calcola Attacco</button>
@@ -94,7 +106,7 @@
       const eff = parseFloat(document.getElementById("efficacia").value);
       const crit = parseFloat(document.getElementById("critico").value);
 
-      if (isNaN(danno) || isNaN(def) || isNaN(lvl) || isNaN(power) || isNaN(stab) || isNaN(eff) || isNaN(crit)) {
+      if (isNaN(danno) || isNaN(def) || isNaN(lvl) || isNaN(power)) {
         document.getElementById("risultato").innerText = "Per favore, compila tutti i campi correttamente.";
         return;
       }
