@@ -61,7 +61,7 @@
   </label>
 
   <label>Livello dell'attaccante:
-    <input type="number" id="livello">
+    <input type="number" id="livello" min="1" max="100">
   </label>
 
   <label>Potenza della mossa:
@@ -92,7 +92,16 @@
     </select>
   </label>
 
+  <label>Range casuale:
+    <select id="random">
+      <option value="0.85-1.00">Normale (85%-100%)</option>
+      <option value="0.925-1.00">Ridotto (92.5%-100%)</option>
+      <option value="1.00-1.00">Fisso (100%)</option>
+    </select>
+  </label>
+
   <button onclick="calcolaAttacco()">Calcola Attacco</button>
+  <button onclick="calcolaTuttiLivelli()">Calcola per Livelli 3/5/8</button>
 
   <div id="risultato">Inserisci i dati e premi Calcola.</div>
 
@@ -105,28 +114,84 @@
       const stab = parseFloat(document.getElementById("stab").value);
       const eff = parseFloat(document.getElementById("efficacia").value);
       const crit = parseFloat(document.getElementById("critico").value);
+      const randomRange = document.getElementById("random").value.split("-");
+      const randomMin = parseFloat(randomRange[0]);
+      const randomMax = parseFloat(randomRange[1]);
 
       if (isNaN(danno) || isNaN(def) || isNaN(lvl) || isNaN(power)) {
         document.getElementById("risultato").innerText = "Per favore, compila tutti i campi correttamente.";
         return;
       }
 
-      // Modificatore minimo e massimo (85% - 100% range)
-      const modMin = stab * eff * crit * 0.85;
-      const modMax = stab * eff * crit * 1.00;
+      // Modificatore completo con range di variabilità
+      const modMin = stab * eff * crit * randomMin;
+      const modMax = stab * eff * crit * randomMax;
 
-      // Calcolo il divisore della formula ufficiale
-      const divisor = ((2 * lvl) / 5 + 2) * power / 50;
+      // Calcolo del divisore con arrotondamenti corretti
+      const base = Math.floor(Math.floor(2 * lvl) / 5) + 2;
+      const intermediate = Math.floor(base * power);
+      const divisor = Math.floor(intermediate / def) / 50;
 
-      // Formula inversa per stimare l'attacco
-      const atkMin = (((danno / modMax) - 2) * def) / divisor;
-      const atkMax = (((danno / modMin) - 2) * def) / divisor;
+      // Formula inversa migliorata con arrotondamenti
+      const atkMin = Math.floor((danno / modMax - 2) / divisor);
+      const atkMax = Math.ceil((danno / modMin - 2) / divisor);
 
-      const min = Math.floor(atkMin);
-      const max = Math.ceil(atkMax);
+      // Aggiungiamo un margine di sicurezza per compensare gli arrotondamenti
+      const margin = Math.max(1, Math.floor((atkMax - atkMin) * 0.3));
+      const adjustedMin = Math.max(1, atkMin - margin);
+      const adjustedMax = atkMax + margin;
 
       document.getElementById("risultato").innerHTML =
-        `Attacco stimato del Pokémon: tra <strong>${min}</strong> e <strong>${max}</strong>`;
+        `Attacco stimato del Pokémon: tra <strong>${adjustedMin}</strong> e <strong>${adjustedMax}</strong>`;
+    }
+
+    function calcolaPerLivello(livello) {
+      const danno = parseFloat(document.getElementById("danno").value);
+      const def = parseFloat(document.getElementById("difesa").value);
+      const power = parseFloat(document.getElementById("potenza").value);
+      const stab = parseFloat(document.getElementById("stab").value);
+      const eff = parseFloat(document.getElementById("efficacia").value);
+      const crit = parseFloat(document.getElementById("critico").value);
+      const randomRange = document.getElementById("random").value.split("-");
+      const randomMin = parseFloat(randomRange[0]);
+      const randomMax = parseFloat(randomRange[1]);
+
+      if (isNaN(danno) || isNaN(def) || isNaN(power)) {
+        return { min: 0, max: 0 };
+      }
+
+      // Modificatore completo con range di variabilità
+      const modMin = stab * eff * crit * randomMin;
+      const modMax = stab * eff * crit * randomMax;
+
+      // Calcolo del divisore con arrotondamenti corretti
+      const base = Math.floor(Math.floor(2 * livello) / 5) + 2;
+      const intermediate = Math.floor(base * power);
+      const divisor = Math.floor(intermediate / def) / 50;
+
+      // Formula inversa migliorata con arrotondamenti
+      const atkMin = Math.floor((danno / modMax - 2) / divisor);
+      const atkMax = Math.ceil((danno / modMin - 2) / divisor);
+
+      // Aggiungiamo un margine di sicurezza
+      const margin = Math.max(1, Math.floor((atkMax - atkMin) * 0.3));
+      const adjustedMin = Math.max(1, atkMin - margin);
+      const adjustedMax = atkMax + margin;
+
+      return { min: adjustedMin, max: adjustedMax };
+    }
+
+    function calcolaTuttiLivelli() {
+      const livelli = [3, 5, 8];
+      const risultati = [];
+      
+      livelli.forEach(lvl => {
+        const risultato = calcolaPerLivello(lvl);
+        risultati.push(`Liv ${lvl}: ${risultato.min}-${risultato.max}`);
+      });
+      
+      document.getElementById("risultato").innerHTML = 
+        `Attacco stimato:<br>${risultati.join('<br>')}`;
     }
   </script>
 </body>
