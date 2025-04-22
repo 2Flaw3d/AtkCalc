@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calcolatore Attacco Pokémon</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fafafa;
+      padding: 2rem;
+      max-width: 500px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+    }
+    input {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      margin-top: 1.5rem;
+      width: 100%;
+      padding: 0.75rem;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #risultato {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 1.2rem;
+      color: #222;
+    }
+  </style>
+</head>
+<body>
+  <h1>Calcolatore Attacco Pokémon</h1>
+
+  <label>Danno subito:
+    <input type="number" id="danno">
+  </label>
+
+  <label>Difesa del difensore:
+    <input type="number" id="difesa">
+  </label>
+
+  <label>Livello dell'attaccante:
+    <input type="number" id="livello">
+  </label>
+
+  <label>Potenza della mossa:
+    <input type="number" id="potenza">
+  </label>
+
+  <label>STAB (1 o 1.5):
+    <input type="number" step="0.1" id="stab" value="1.0">
+  </label>
+
+  <label>Efficacia (0.5, 1, 2...):
+    <input type="number" step="0.5" id="efficacia" value="1.0">
+  </label>
+
+  <label>Critico (1, 1.5 o 2):
+    <input type="number" step="0.5" id="critico" value="1.0">
+  </label>
+
+  <button onclick="calcolaAttacco()">Calcola Attacco</button>
+
+  <div id="risultato">Inserisci i dati e premi Calcola.</div>
+
+  <script>
+    function calcolaAttacco() {
+      const danno = parseFloat(document.getElementById("danno").value);
+      const def = parseFloat(document.getElementById("difesa").value);
+      const lvl = parseFloat(document.getElementById("livello").value);
+      const power = parseFloat(document.getElementById("potenza").value);
+      const stab = parseFloat(document.getElementById("stab").value);
+      const eff = parseFloat(document.getElementById("efficacia").value);
+      const crit = parseFloat(document.getElementById("critico").value);
+
+      if (isNaN(danno) || isNaN(def) || isNaN(lvl) || isNaN(power) || isNaN(stab) || isNaN(eff) || isNaN(crit)) {
+        document.getElementById("risultato").innerText = "Per favore, compila tutti i campi correttamente.";
+        return;
+      }
+
+      const modMin = stab * eff * crit * 0.85;
+      const modMax = stab * eff * crit * 1.00;
+
+      const baseMin = ((danno / modMax) - 2) * 50 * def;
+      const baseMax = ((danno / modMin) - 2) * 50 * def;
+      const den = ((2 * lvl / 5 + 2) * power);
+
+      const attMin = baseMin / den;
+      const attMax = baseMax / den;
+
+      const min = Math.floor(attMin);
+      const max = Math.ceil(attMax);
+
+      document.getElementById("risultato").innerText = `Attacco stimato: tra ${min} e ${max}`;
+    }
+  </script>
+</body>
+</html>
