@@ -60,7 +60,7 @@
     <input type="number" id="difesa">
   </label>
 
-  <label>Livello dell'attaccante (attuale):
+  <label>Livello dell'attaccante:
     <input type="number" id="livello">
   </label>
 
@@ -111,26 +111,22 @@
         return;
       }
 
+      // Modificatore minimo e massimo (85% - 100% range)
       const modMin = stab * eff * crit * 0.85;
       const modMax = stab * eff * crit * 1.00;
 
-      const baseMin = ((danno / modMax) - 2) * 50 * def;
-      const baseMax = ((danno / modMin) - 2) * 50 * def;
-      const denAttuale = ((2 * lvl / 5 + 2) * power);
+      // Calcolo il divisore della formula ufficiale
+      const divisor = ((2 * lvl) / 5 + 2) * power / 50;
 
-      const attMin = baseMin / denAttuale;
-      const attMax = baseMax / denAttuale;
+      // Formula inversa per stimare l'attacco
+      const atkMin = (((danno / modMax) - 2) * def) / divisor;
+      const atkMax = (((danno / modMin) - 2) * def) / divisor;
 
-      const min = Math.floor(attMin);
-      const max = Math.ceil(attMax);
-
-      // Calcolo dell'attacco al livello 8 (proporzione lineare semplificata)
-      const attMin8 = Math.floor(attMin * (8 / lvl));
-      const attMax8 = Math.ceil(attMax * (8 / lvl));
+      const min = Math.floor(atkMin);
+      const max = Math.ceil(atkMax);
 
       document.getElementById("risultato").innerHTML =
-        `Attacco stimato attuale: tra <strong>${min}</strong> e <strong>${max}</strong><br>` +
-        `Attacco stimato al livello 8: tra <strong>${attMin8}</strong> e <strong>${attMax8}</strong>`;
+        `Attacco stimato del Pokémon: tra <strong>${min}</strong> e <strong>${max}</strong>`;
     }
   </script>
 </body>
