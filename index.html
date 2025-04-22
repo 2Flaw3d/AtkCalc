@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calcolatore Attacco Pokémon</title>
+  <title>Calcolatore Attacco Pokémon Gen 5</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -55,17 +55,21 @@
       color: #666;
       margin-top: 0.5rem;
     }
+    .highlight {
+      color: #d9534f;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
-  <h1>Calcolatore Attacco Pokémon</h1>
+  <h1>Calcolatore Attacco Pokémon <span class="highlight">Gen 5</span></h1>
 
   <label>Danno subito:
-    <input type="number" id="danno" min="1">
+    <input type="number" id="danno" min="1" value="5">
   </label>
 
   <label>Difesa del tuo Pokémon:
-    <input type="number" id="difesa" min="1">
+    <input type="number" id="difesa" min="1" value="23">
   </label>
 
   <label>Livello dell'attaccante:
@@ -73,12 +77,12 @@
   </label>
 
   <label>Potenza della mossa:
-    <input type="number" id="potenza" min="1">
+    <input type="number" id="potenza" min="1" value="40">
   </label>
 
   <label>STAB:
     <select id="stab">
-      <option value="1.0">No</option>
+      <option value="1.0" selected>No</option>
       <option value="1.5">Sì</option>
     </select>
   </label>
@@ -95,14 +99,14 @@
 
   <label>Colpo critico:
     <select id="critico">
-      <option value="1.0">No</option>
+      <option value="1.0" selected>No</option>
       <option value="1.5">Sì</option>
     </select>
   </label>
 
   <label>Range casuale:
     <select id="random">
-      <option value="0.85">Normale (85%-100%)</option>
+      <option value="0.85" selected>Normale (85%-100%)</option>
       <option value="0.925">Ridotto (92.5%-100%)</option>
       <option value="1.00">Fisso (100%)</option>
     </select>
@@ -112,7 +116,7 @@
   <button onclick="calcolaTuttiLivelli()">Calcola per Livelli 3/5/8</button>
 
   <div id="risultato">Inserisci i dati e premi Calcola.</div>
-  <div class="note">Nota: Per risultati più precisi, usa il danno minimo e massimo osservato.</div>
+  <div class="note">Nota: Questo calcolatore è ottimizzato per la Generazione 5 (Black/White/Black 2/White 2)</div>
 
   <script>
     function calcolaAttacco() {
@@ -131,53 +135,69 @@
         return;
       }
 
-      // Calcola l'attacco usando la formula precisa
-      const attackRanges = [];
+      // Formula specifica per Gen 5
+      const attackValues = new Set();
       
-      // Prova diversi valori di moltiplicatore casuale (da 0.85 a 1.00 in passi di 0.01)
+      // Prova tutti i possibili valori di moltiplicatore casuale
       for (let r = randomMin; r <= 1.00; r += 0.01) {
         r = parseFloat(r.toFixed(2));
         const modifier = stab * eff * crit * r;
         
-        // Formula originale del danno Pokémon
-        const base = Math.floor((2 * lvl) / 5) + 2;
-        const baseDamage = Math.floor((base * power * 25) / def);
-        const fullDamage = Math.floor(baseDamage / 50) + 2;
-        
         // Calcola l'attacco necessario per ottenere il danno osservato
-        const attack = Math.floor((danno / modifier - 2) * def * 50 / (base * power));
+        // Formula Gen 5: Danno = (((2*L/5 + 2)*A*P/D)/50 + 2)*modifier
+        const numerator = (danno / modifier - 2) * 50;
+        const denominator = (Math.floor(2 * lvl / 5) + 2) * power / def;
+        const attack = numerator / denominator;
         
-        if (Math.floor(fullDamage * modifier) === danno) {
-          attackRanges.push(attack);
+        // Considera solo valori interi realistici (1-255)
+        const roundedAttack = Math.round(attack);
+        if (roundedAttack >= 1 && roundedAttack <= 255) {
+          attackValues.add(roundedAttack);
         }
       }
 
-      // Se non troviamo corrispondenze esatte, allarghiamo la ricerca
-      if (attackRanges.length === 0) {
-        for (let r = randomMin; r <= 1.00; r += 0.01) {
-          r = parseFloat(r.toFixed(2));
-          const attack = Math.floor(((danno / (stab * eff * crit * r) - 2) * def * 50 / (Math.floor((2 * lvl) / 5 + 2) * power));
-          attackRanges.push(attack);
-        }
+      // Se non troviamo valori, usiamo un approccio più approssimativo
+      if (attackValues.size === 0) {
+        const minAttack = Math.floor(((danno / (stab * eff * crit * 1.00) - 2) * def * 50 / ((Math.floor(2 * lvl / 5) + 2) * power));
+        const maxAttack = Math.ceil(((danno / (stab * eff * crit * randomMin) - 2) * def * 50 / ((Math.floor(2 * lvl / 5) + 2) * power));
+        
+        // Aggiungi un margine più ampio per sicurezza
+        const margin = Math.max(3, Math.floor((maxAttack - minAttack) * 0.25));
+        const adjustedMin = Math.max(1, minAttack - margin);
+        const adjustedMax = maxAttack + margin;
+        
+        document.getElementById("risultato").innerHTML =
+          `Attacco stimato: tra <strong>${adjustedMin}</strong> e <strong>${adjustedMax}</strong><br>
+           <span class="highlight">Nota: Potrebbe essere necessario verificare più valori</span>`;
+        return;
       }
 
-      // Calcola min e max con un margine più ampio
-      const minAttack = Math.min(...attackRanges);
-      const maxAttack = Math.max(...attackRanges);
+      // Converti il Set in un array ordinato
+      const sortedAttacks = Array.from(attackValues).sort((a, b) => a - b);
+      const minAttack = sortedAttacks[0];
+      const maxAttack = sortedAttacks[sortedAttacks.length - 1];
       
-      // Aggiungi un margine del 15% per sicurezza
-      const margin = Math.max(2, Math.floor((maxAttack - minAttack) * 0.15));
-      const adjustedMin = Math.max(1, minAttack - margin);
-      const adjustedMax = maxAttack + margin;
-
-      document.getElementById("risultato").innerHTML =
-        `Attacco stimato del Pokémon: tra <strong>${adjustedMin}</strong> e <strong>${adjustedMax}</strong><br>
-         Valori possibili: ${[...new Set(attackRanges)].sort((a,b) => a-b).join(', ')}`;
+      // Espandi leggermente il range per sicurezza
+      const expandedMin = Math.max(1, minAttack - 2);
+      const expandedMax = maxAttack + 2;
+      
+      // Mostra i risultati
+      let resultHTML = `Attacco stimato: tra <strong>${expandedMin}</strong> e <strong>${expandedMax}</strong>`;
+      
+      // Se ci sono pochi valori possibili, mostrali tutti
+      if (sortedAttacks.length <= 10) {
+        resultHTML += `<br>Valori possibili: ${sortedAttacks.join(', ')}`;
+      } else {
+        resultHTML += `<br>${sortedAttacks.length} valori possibili`;
+      }
+      
+      document.getElementById("risultato").innerHTML = resultHTML;
     }
 
     function calcolaTuttiLivelli() {
       const livelli = [3, 5, 8];
       const risultati = [];
+      const originalLevel = document.getElementById("livello").value;
       
       livelli.forEach(lvl => {
         document.getElementById("livello").value = lvl;
@@ -186,6 +206,7 @@
         risultati.push(`<strong>Liv ${lvl}:</strong> ${risultato.split('tra ')[1]}`);
       });
       
+      document.getElementById("livello").value = originalLevel;
       document.getElementById("risultato").innerHTML = 
         `Stima attacco per diversi livelli:<br><br>${risultati.join('<br><br>')}`;
     }
